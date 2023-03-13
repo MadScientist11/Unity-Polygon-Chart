@@ -1,5 +1,12 @@
 {
   "dependencies": {
+    "com.quizandpuzzle.shaderlib": {
+      "version": "https://github.com/quizandpuzzle/ShaderLib.git",
+      "depth": 0,
+      "source": "git",
+      "dependencies": {},
+      "hash": "6a8d2ac18225fdde9a12a33054a32ccba2f45e85"
+    },
     "com.unity.2d.animation": {
       "version": "7.0.7",
       "depth": 1,
