@@ -47,7 +47,7 @@ Shader "Unlit/Chart"
             float _RadialLineThickness;
             float _StatLinesThickness;
             float _StatCircles;
-            float _Stats[6];
+            float _Stats[10];
 
             float4 _Bg;
 
@@ -101,39 +101,39 @@ Shader "Unlit/Chart"
                 return PolygonSDF(uv, polygon, count);
             }
 
-            float Hexagon(float2 uv)
+            float Ngon(float2 uv, float sides)
             {
                 uv *= PI;
                 float radial = atan2(uv.x, uv.y) + PI;
-                float sides = 6;
                 float side = UNITY_TWO_PI / sides;
                 return cos(floor(radial / side + 0.5) * side - radial) * length(uv);
             }
-            
+
             float Remap(float oa, float ob, float na, float nb, float val)
             {
                 return (val - oa) / (ob - oa) * (nb - na) + na;
             }
 
+            #define s 6
 
-            float ChartSections(float2 uv, float domainRange, float repetitions, float thickness)
+            float ChartGrid(float2 uv, float domainRange, float repetitions, float thickness)
             {
-                float hexagon = Hexagon(uv * domainRange);
+                float hexagon = Ngon(uv * domainRange, s);
                 float sections = frac(hexagon * repetitions);
                 float sectionsContinuous = length(Remap(0, 1, -1, 1, sections));
                 return sectionsContinuous - 1 + thickness;
             }
 
-            float ChartRadialLines(float2 uv, float2 dir, float thickness)
+            float ChartRadialLine(float2 uv, float2 dir, float thickness)
             {
                 float segment = SegmentSDF(uv, float2(0, 0), dir * 2);
                 return segment - thickness;
             }
 
-            float Sample(float s, float offset = 1)
+            float Sample(float ss, float offset = 1)
             {
-                float e = fwidth(s) * offset;
-                return smoothstep(e, -e, s);
+                float e = fwidth(ss) * offset;
+                return smoothstep(e, -e, ss);
             }
 
 
@@ -143,7 +143,7 @@ Shader "Unlit/Chart"
                 uvCentered -= 0.5;
 
                 float3 color = float3(0, 0, 0);
-                float angle = UNITY_TWO_PI / 6;
+                float angle = TAU / s;
 
                 float2 polygon[11];
                 float maskSize = 1.05;
@@ -152,31 +152,38 @@ Shader "Unlit/Chart"
                 float circles = length(uvCentered);
                 float chartRadialLines = length(uvCentered);
 
-                for (int i = 0; i < 6; i++)
+                float sidesOddOffset = s % 2 == 0;
+
+                for (int i = 0; i < s; i++)
                 {
-                    float2 dir = float2(cos(angle * i), sin(angle * i));
+                    float2 dir = float2(sin((angle * i) + 0.5 * PI* sidesOddOffset), cos(angle * i + 0.5 * PI* sidesOddOffset));
                     float2 pos = dir * sectionStep * _Stats[i];
 
                     polygon[i] = pos;
-                    chartRadialLines = min(chartRadialLines, ChartRadialLines(uvCentered, dir, _RadialLineThickness));
+                    chartRadialLines = min(chartRadialLines, ChartRadialLine(uvCentered, dir, _RadialLineThickness));
                     circles = min(circles, length(uvCentered - pos) - _StatCircles);
                 }
+                //float chartGrid = 0.01 / ChartGrid(uvCentered, 1 + 1 - maskSize, _Repetitions, _SectionThickness);
+                //float statsCoveredArea = 0.01 / ChartSDF(uvCentered, polygon, s);
+                //float statLines = 0.01 / (abs(statsCoveredArea) - _StatLinesThickness);
+                //return float4(statLines.xxx, 1);
 
-                float chartSections = ChartSections(uvCentered, 1 + 1 - maskSize, _Repetitions, _SectionThickness);
-                float hexMask = Hexagon(uvCentered) + (1 - maskSize);
-                float statsCoveredArea = ChartSDF(uvCentered, polygon, 6);
+                float chartGrid = ChartGrid(uvCentered, 1 + 1 - maskSize, _Repetitions, _SectionThickness);
+                float mask = Ngon(uvCentered, s) + (1 - maskSize);
+                float statsCoveredArea = ChartSDF(uvCentered, polygon, s);
                 float statLines = abs(statsCoveredArea) - _StatLinesThickness;
 
-                hexMask = smoothstep(maskSize, maskSize - 0.01, hexMask);
-                chartSections = Sample(chartSections, -1);
+
+                mask = smoothstep(maskSize, maskSize - 0.01, mask);
+                chartGrid = Sample(chartGrid, -1);
                 statsCoveredArea = Sample(statsCoveredArea);
                 circles = Sample(circles);
                 statLines = Sample(statLines);
                 chartRadialLines = Sample(chartRadialLines);
 
-                float chartBase = max(chartSections, chartRadialLines);
+                float chartBase = max(chartGrid, chartRadialLines);
 
-                color = hexMask * _Bg;
+                color = mask * _Bg;
                 color = lerp(color, _ChartBaseColor, chartBase);
                 color = lerp(color, _CoveredAreaColor, saturate(statsCoveredArea - chartBase));
                 color = lerp(color, _ChartStatLines, statLines);
@@ -184,8 +191,8 @@ Shader "Unlit/Chart"
 
                 float alpha = chartBase + statsCoveredArea * 0.75 + statLines + circles;
 
-
-                return saturate(float4(color, alpha * hexMask + hexMask * _Bg.a));
+            
+                return saturate(float4(color, alpha * mask + mask * _Bg.a));
             }
             ENDCG
         }
