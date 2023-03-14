@@ -6,6 +6,7 @@ Shader "Unlit/Chart"
 
 
         _Repetitions("Repetitions", Range(3, 12)) = 5
+        _Sides("Sides", Range(4, 10)) = 6
         _RadialLineThickness("RadialLinesThickness", Range(0.001, 0.05)) = 0.004
         _SectionThickness("SectionThickness", Range(0.1, 0.5)) = 0.2
         _StatCircles("StatCircles", Range(0, 0.02)) = 0.0125
@@ -48,6 +49,8 @@ Shader "Unlit/Chart"
             float _StatLinesThickness;
             float _StatCircles;
             float _Stats[10];
+            float _Sides = 6;
+
 
             float4 _Bg;
 
@@ -78,30 +81,12 @@ Shader "Unlit/Chart"
                 return o;
             }
 
-            float opSmoothUnion(float d1, float d2, float k)
-            {
-                float h = clamp(0.5 + 0.5 * (d2 - d1) / k, 0.0, 1.0);
-                return lerp(d2, d1, h) - k * h * (1.0 - h);
-            }
-
-            float opSmoothSubtraction(float d1, float d2, float k)
-            {
-                float h = clamp(0.5 - 0.5 * (d2 + d1) / k, 0.0, 1.0);
-                return lerp(d2, -d1, h) + k * h * (1.0 - h);
-            }
-
-            float opSmoothIntersection(float d1, float d2, float k)
-            {
-                float h = clamp(0.5 - 0.5 * (d2 - d1) / k, 0.0, 1.0);
-                return lerp(d2, d1, h) + k * h * (1.0 - h);
-            }
-
             float ChartSDF(float2 uv, float2 polygon[11], float count)
             {
                 return PolygonSDF(uv, polygon, count);
             }
 
-            float Ngon(float2 uv, float sides)
+            float Ngon(float2 uv, int sides)
             {
                 uv *= PI;
                 float radial = atan2(uv.x, uv.y) + PI;
@@ -114,12 +99,11 @@ Shader "Unlit/Chart"
                 return (val - oa) / (ob - oa) * (nb - na) + na;
             }
 
-            #define s 6
 
-            float ChartGrid(float2 uv, float domainRange, float repetitions, float thickness)
+            float ChartGrid(float2 uv, float domainRange, float repetitions, float thickness, int sides)
             {
-                float hexagon = Ngon(uv * domainRange, s);
-                float sections = frac(hexagon * repetitions);
+                float ngon = Ngon(uv * domainRange, sides);
+                float sections = frac(ngon * repetitions);
                 float sectionsContinuous = length(Remap(0, 1, -1, 1, sections));
                 return sectionsContinuous - 1 + thickness;
             }
@@ -130,12 +114,6 @@ Shader "Unlit/Chart"
                 return segment - thickness;
             }
 
-            float Sample(float ss, float offset = 1)
-            {
-                float e = fwidth(ss) * offset;
-                return smoothstep(e, -e, ss);
-            }
-
 
             float4 frag(Interpolators i) : SV_Target
             {
@@ -143,20 +121,23 @@ Shader "Unlit/Chart"
                 uvCentered -= 0.5;
 
                 float3 color = float3(0, 0, 0);
-                float angle = TAU / s;
+                int sides = int(_Sides);
+                int gridRepetitions = int(_Repetitions);
+                float angle = TAU / sides;
 
                 float2 polygon[11];
                 float maskSize = 1.05;
 
-                float sectionStep = (maskSize / 2) * .74 / _Repetitions;
+                float sectionStep = (maskSize / 2) * .74 / gridRepetitions;
                 float circles = length(uvCentered);
                 float chartRadialLines = length(uvCentered);
 
-                float sidesOddOffset = s % 2 == 0;
+                float sidesOddOffset = sides % 2 == 0;
 
-                for (int i = 0; i < s; i++)
+                for (int i = 0; i < sides; i++)
                 {
-                    float2 dir = float2(sin((angle * i) + 0.5 * PI* sidesOddOffset), cos(angle * i + 0.5 * PI* sidesOddOffset));
+                    float2 dir = float2(sin((angle * i) + 0.5 * PI * sidesOddOffset),
+                                        cos(angle * i + 0.5 * PI * sidesOddOffset));
                     float2 pos = dir * sectionStep * _Stats[i];
 
                     polygon[i] = pos;
@@ -168,31 +149,31 @@ Shader "Unlit/Chart"
                 //float statLines = 0.01 / (abs(statsCoveredArea) - _StatLinesThickness);
                 //return float4(statLines.xxx, 1);
 
-                float chartGrid = ChartGrid(uvCentered, 1 + 1 - maskSize, _Repetitions, _SectionThickness);
-                float mask = Ngon(uvCentered, s) + (1 - maskSize);
-                float statsCoveredArea = ChartSDF(uvCentered, polygon, s);
+                float chartGrid = ChartGrid(uvCentered, 1 + 1 - maskSize, gridRepetitions, _SectionThickness, sides);
+                float mask = Ngon(uvCentered, sides) + (1 - maskSize);
+                float statsCoveredArea = ChartSDF(uvCentered, polygon, sides);
                 float statLines = abs(statsCoveredArea) - _StatLinesThickness;
 
 
                 mask = smoothstep(maskSize, maskSize - 0.01, mask);
-                chartGrid = Sample(chartGrid, -1);
-                statsCoveredArea = Sample(statsCoveredArea);
-                circles = Sample(circles);
-                statLines = Sample(statLines);
-                chartRadialLines = Sample(chartRadialLines);
+                chartGrid = SampleHard(chartGrid, -1.5);
+                statsCoveredArea = SampleHard(statsCoveredArea);
+                circles = SampleHard(circles);
+                statLines = SampleHard(statLines);
+                chartRadialLines = SampleHard(chartRadialLines);
 
                 float chartBase = max(chartGrid, chartRadialLines);
 
                 color = mask * _Bg;
                 color = lerp(color, _ChartBaseColor, chartBase);
-                color = lerp(color, _CoveredAreaColor, saturate(statsCoveredArea - chartBase));
+                color = lerp(color, _CoveredAreaColor, saturate(statsCoveredArea));
                 color = lerp(color, _ChartStatLines, statLines);
                 color = lerp(color, _CirclesColor, circles);
 
-                float alpha = chartBase + statsCoveredArea * 0.75 + statLines + circles;
+                float alpha = chartBase + statsCoveredArea * .25 + statLines + circles;
 
-            
-                return saturate(float4(color, alpha * mask + mask * _Bg.a));
+
+                return float4(color, saturate(alpha * mask + mask * _Bg.a * (1 - alpha)));
             }
             ENDCG
         }

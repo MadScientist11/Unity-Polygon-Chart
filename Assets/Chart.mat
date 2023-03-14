@@ -26,15 +26,16 @@ Material:
         m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
-    - _RadialLineThickness: 0.0068
-    - _Repetitions: 6
-    - _SectionThickness: 0.22
-    - _StatCircles: 0
-    - _StatLinesThickness: 0.003
+    - _RadialLineThickness: 0.0063
+    - _Repetitions: 4
+    - _SectionThickness: 0.291
+    - _Sides: 4
+    - _StatCircles: 0.0143
+    - _StatLinesThickness: 0.0081
     m_Colors:
-    - _Bg: {r: 0.8, g: 0.5, b: 0.2, a: 0}
-    - _ChartBaseColor: {r: 0.8, g: 0.8, b: 0.8, a: 1}
+    - _Bg: {r: 0.08940016, g: 0.1686806, b: 0.38679248, a: 0.7529412}
+    - _ChartBaseColor: {r: 0.12156863, g: 0.31764707, b: 1, a: 1}
     - _ChartStatLines: {r: 0.87, g: 0.32, b: 0.42, a: 1}
     - _CirclesColor: {r: 0.8, g: 0.21, b: 0.53, a: 1}
-    - _CoveredAreaColor: {r: 1, g: 0.75, b: 0.75, a: 1}
+    - _CoveredAreaColor: {r: 0.6981132, g: 0.33259168, b: 0.33259168, a: 1}
   m_BuildTextureStacks: []
