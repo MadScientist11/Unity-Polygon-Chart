@@ -1,1 +1,1 @@
-![Screenshot](Screenshot.png)
+![](chart.gif)

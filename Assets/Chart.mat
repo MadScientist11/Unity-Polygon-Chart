@@ -26,11 +26,11 @@ Material:
         m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
-    - _RadialLineThickness: 0.0063
-    - _Repetitions: 4
-    - _SectionThickness: 0.291
-    - _Sides: 4
-    - _StatCircles: 0.0143
+    - _RadialLineThickness: 0.0074
+    - _Repetitions: 9
+    - _SectionThickness: 0.356
+    - _Sides: 5
+    - _StatCircles: 0
     - _StatLinesThickness: 0.0081
     m_Colors:
     - _Bg: {r: 0.08940016, g: 0.1686806, b: 0.38679248, a: 0.7529412}
