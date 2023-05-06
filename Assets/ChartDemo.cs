@@ -1,13 +1,14 @@
 using System.Collections;
 using UnityEngine;
+using UnityEngine.Serialization;
 using UnityEngine.UI;
 using Random = UnityEngine.Random;
 
 public class ChartDemo : MonoBehaviour
 {
-    [SerializeField] private RawImage _chart;
-    [Range(5, 10)] [SerializeField] private int _sides = 10;
-    [SerializeField] private int _repetitions = 4;
+    [FormerlySerializedAs("_chart")] public RawImage Chart;
+    [Range(5, 10)] public int Sides = 10;
+    public int Repetitions = 4;
 
     private float[] array = new float[10];
     private float[] _lastArr = new float[10];
@@ -21,31 +22,22 @@ public class ChartDemo : MonoBehaviour
         StartCoroutine(ChartUpdate());
     }
 
-    private void UpdateArraysSize(int size)
-    {
-        array = new float[size];
-        _lastArr = new float[size];
-        lerpedArray = new float[size];
-    }
 
     private void Update()
     {
-        if (array.Length != _sides)
-        {
-            UpdateArraysSize(_sides);
-        }
+    
         
         _currentDuration += Time.deltaTime;
 
-        for (int i = 0; i < _sides; i++)
+        for (int i = 0; i < Sides; i++)
         {
             lerpedArray[i] = Mathf.Lerp(_lastArr[i], array[i],
                 _currentDuration * _currentDuration * (3.0f - 2.0f * _currentDuration));
         }
 
-        _chart.material.SetFloatArray("_Stats", lerpedArray);
-        _chart.material.SetFloat("_Repetitions", _repetitions);
-        _chart.material.SetFloat("_Sides", _sides);
+        Chart.material.SetFloatArray("_Stats", lerpedArray);
+        Chart.material.SetFloat("_Repetitions", Repetitions);
+        Chart.material.SetFloat("_Sides", Sides);
     }
 
     private IEnumerator ChartUpdate()
@@ -56,7 +48,7 @@ public class ChartDemo : MonoBehaviour
 
             for (int i = 0; i < array.Length; i++)
             {
-                array[i] = Random.Range(1, _repetitions);
+                array[i] = Random.Range(1, Repetitions);
             }
 
             _currentDuration = 0;

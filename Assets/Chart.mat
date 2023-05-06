@@ -27,10 +27,10 @@ Material:
     m_Ints: []
     m_Floats:
     - _RadialLineThickness: 0.0074
-    - _Repetitions: 9
+    - _Repetitions: 8
     - _SectionThickness: 0.356
-    - _Sides: 5
-    - _StatCircles: 0
+    - _Sides: 6
+    - _StatCircles: 0.013723539
     - _StatLinesThickness: 0.0081
     m_Colors:
     - _Bg: {r: 0.08940016, g: 0.1686806, b: 0.38679248, a: 0.7529412}
